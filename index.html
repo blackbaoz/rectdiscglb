@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RECT DISC AI Fit Finder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: #0a0a0f; font-family: 'Helvetica Neue', Arial, sans-serif; color: #f0f0f0; position: relative; overflow-x: hidden; }
+    .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+    .bg-glow { position: fixed; top: -20%; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,180,255,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+    .container { max-width: 560px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
+    header { padding: 40px 0 32px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 32px; }
+    .label { font-size: 11px; letter-spacing: 4px; color: #00b4ff; margin-bottom: 8px; }
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    header p { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 0.3px; }
+    .intro-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+    .intro-card p { font-size: 14px; line-height: 1.8; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+    .intro-badges { display: flex; gap: 10px; }
+    .badge { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 8px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; }
+    .badge-icon { font-size: 18px; margin-bottom: 6px; }
+    .btn-primary { width: 100%; padding: 16px; background: #00b4ff; border: none; border-radius: 12px; color: #000; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; font-family: inherit; }
+    .btn-primary:hover { background: #33c3ff; }
+    .history-item { margin-bottom: 16px; }
+    .history-q-num { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 4px; }
+    .history-q-text { font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 4px; line-height: 1.5; }
+    .history-answer { display: inline-block; background: rgba(0,180,255,0.1); border: 1px solid rgba(0,180,255,0.25); border-radius: 20px; padding: 5px 14px; font-size: 13px; color: #00b4ff; }
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin-bottom: 24px; }
+    .quiz-wrap { animation: fadeUp 0.4s ease; }
+    .q-num { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.3); margin-bottom: 12px; }
+    .q-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 28px; letter-spacing: -0.3px; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .opt-btn { padding: 16px 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: rgba(255,255,255,0.8); font-size: 14px; text-align: left; cursor: pointer; transition: all 0.15s; font-family: inherit; line-height: 1.4; }
+    .opt-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+    .opt-btn.selected { background: rgba(0,180,255,0.1); border-color: rgba(0,180,255,0.4); color: #00b4ff; }
+    .loading-wrap { display: flex; flex-direction: column; align-items: center; padding: 60px 0; gap: 20px; }
+    .spinner { width: 36px; height: 36px; border: 2px solid rgba(255,255,255,0.08); border-top-color: #00b4ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loading-text { font-size: 12px; letter-spacing: 2px; color: rgba(255,255,255,0.3); }
+    .result-wrap { animation: fadeUp 0.4s ease; }
+    .result-label { font-size: 10px; letter-spacing: 4px; color: rgba(255,255,255,0.2); margin-bottom: 16px; }
+    .result-main { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .result-best-label { font-size: 10px; letter-spacing: 3px; color: #00b4ff; margin-bottom: 10px; }
+    .result-model { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+    .result-price { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .tag { display: inline-block; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: rgba(255,255,255,0.4); }
+    .result-desc { font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
+    .result-reason { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.7); border-left: 3px solid #00b4ff; }
+    .ai-comment-wrap { margin-top: 16px; }
+    .ai-comment-label { font-size: 10px; letter-spacing: 2px; color: #00b4ff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .ai-comment-body { background: rgba(0,180,255,0.04); border: 1px solid rgba(0,180,255,0.12); border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.8; color: rgba(255,255,255,0.75); min-height: 60px; }
+    .ai-comment-loading { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.3); font-size: 12px; }
+    .dot-pulse { display: flex; gap: 4px; }
+    .dot-pulse span { width: 5px; height: 5px; background: #00b4ff; border-radius: 50%; animation: dotBounce 1.2s infinite; }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    .btn-shop { display: block; margin-top: 20px; padding: 14px; background: #00b4ff; border-radius: 10px; color: #000; text-align: center; text-decoration: none; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; transition: background 0.2s; }
+    .btn-shop:hover { background: #33c3ff; }
+    .result-runner { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .runner-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 2px; margin-bottom: 8px; }
+    .runner-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .runner-model { font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.7); }
+    .runner-price { font-size: 14px; color: rgba(255,255,255,0.4); }
+    .runner-reason { font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.4); }
+    .runner-link { display: inline-block; margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: underline; }
+    .share-section { margin-bottom: 16px; }
+    .share-label { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,0.3); margin-bottom: 10px; }
+    .share-buttons { display: flex; gap: 8px; }
+    .btn-share { flex: 1; padding: 12px 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.6); font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; text-align: center; }
+    .btn-share:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.04); }
+    .btn-share.twitter:hover { border-color: rgba(29,161,242,0.4); color: #1da1f2; }
+    .btn-share.copy:hover { border-color: rgba(0,180,255,0.4); color: #00b4ff; }
+    .chat-section { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .chat-label { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,0.3); margin-bottom: 12px; }
+    .chat-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; max-height: 300px; overflow-y: auto; }
+    .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; max-width: 90%; }
+    .chat-msg.user { background: rgba(0,180,255,0.1); border: 1px solid rgba(0,180,255,0.2); color: #00b4ff; align-self: flex-end; }
+    .chat-msg.ai { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); align-self: flex-start; }
+    .chat-msg.ai-loading { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); align-self: flex-start; padding: 12px 14px; }
+    .chat-input-row { display: flex; gap: 8px; }
+    .chat-input { flex: 1; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #f0f0f0; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .chat-input:focus { border-color: rgba(0,180,255,0.3); }
+    .chat-input::placeholder { color: rgba(255,255,255,0.2); }
+    .chat-send { padding: 12px 16px; background: #00b4ff; border: none; border-radius: 10px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.2s; }
+    .chat-send:hover { background: #33c3ff; }
+    .chat-send:disabled { background: rgba(0,180,255,0.3); cursor: not-allowed; }
+    .btn-retry { width: 100%; padding: 14px; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 13px; cursor: pointer; letter-spacing: 1px; transition: all 0.2s; font-family: inherit; }
+    .btn-retry:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); }
+    .error-msg { background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.2); border-radius: 12px; padding: 16px; font-size: 13px; color: rgba(255,120,120,0.9); margin-bottom: 16px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .copied-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,180,255,0.9); color: #000; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 100; }
+    .copied-toast.show { opacity: 1; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="container">
+    <header>
+      <div class="label">RECT DISC</div>
+      <h1>AI Fit Finder</h1>
+      <p>Find your perfect RECT DISC model with AI</p>
+    </header>
+
+    <div id="screen-intro">
+      <div class="intro-card">
+        <p>Answer 6 questions and our AI will recommend the RECT DISC model that best matches your riding style.</p>
+        <div class="intro-badges">
+          <div class="badge"><div class="badge-icon">🎯</div>6 Questions</div>
+          <div class="badge"><div class="badge-icon">⚡️</div>AI Analysis</div>
+          <div class="badge"><div class="badge-icon">🏂</div>Best Match</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="startQuiz()">Start Quiz →</button>
+    </div>
+
+    <div id="screen-quiz" class="hidden">
+      <div id="history-area"></div>
+      <div id="divider" class="divider hidden"></div>
+      <div class="quiz-wrap">
+        <div class="q-num" id="q-num"></div>
+        <div class="q-text" id="q-text"></div>
+        <div class="options" id="options-area"></div>
+      </div>
+    </div>
+
+    <div id="screen-loading" class="hidden">
+      <div id="history-area-loading"></div>
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">AI ANALYZING...</div>
+      </div>
+    </div>
+
+    <div id="screen-result" class="hidden">
+      <div class="result-wrap">
+        <div class="result-label">RESULT</div>
+        <div class="result-main">
+          <div class="result-best-label">BEST MATCH</div>
+          <div class="result-model" id="r-model"></div>
+          <div class="result-price" id="r-price"></div>
+          <div class="tags" id="r-tags"></div>
+          <p class="result-desc" id="r-desc"></p>
+          <div class="result-reason" id="r-reason"></div>
+          <div class="ai-comment-wrap">
+            <div class="ai-comment-label">✦ AI MESSAGE</div>
+            <div class="ai-comment-body" id="ai-comment">
+              <div class="ai-comment-loading">
+                <div class="dot-pulse"><span></span><span></span><span></span></div>
+                <span>Generating message...</span>
+              </div>
+            </div>
+          </div>
+          <a class="btn-shop" id="r-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+        </div>
+
+        <div class="result-runner" id="runner-block">
+          <div class="runner-label">RUNNER UP</div>
+          <div class="runner-row">
+            <div class="runner-model" id="ru-model"></div>
+            <div class="runner-price" id="ru-price"></div>
+          </div>
+          <div class="runner-reason" id="ru-reason"></div>
+          <a class="runner-link" id="ru-link" href="#" target="_blank" rel="noopener noreferrer">View product page</a>
+        </div>
+
+        <div class="share-section">
+          <div class="share-label">SHARE</div>
+          <div class="share-buttons">
+            <button class="btn-share twitter" onclick="shareTwitter()">𝕏 Share on X</button>
+            <button class="btn-share copy" onclick="copyResult()">📋 Copy Result</button>
+          </div>
+        </div>
+
+        <div class="chat-section">
+          <div class="chat-label">💬 ASK AI</div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" type="text" placeholder="e.g. Does it work well in spring snow?" maxlength="200">
+            <button class="chat-send" id="chat-send" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+
+        <button class="btn-retry" onclick="resetQuiz()">Try Again</button>
+      </div>
+    </div>
+
+    <div id="screen-error" class="hidden">
+      <div class="error-msg" id="error-text">A connection error occurred. Please reload the page and try again.</div>
+      <button class="btn-primary" onclick="resetQuiz()">Try Again</button>
+    </div>
+  </div>
+
+  <div class="copied-toast" id="toast">Copied!</div>
+
+  <script>
+    const MODELS = {
+      "RD-02": { price:"¥8,980", url:"https://rectdisc.theshop.jp/items/65390591", tags:["Natural","Entry","Compact"], desc:"The most natural-feeling model in the lineup. Perfect for riders who want RECT DISC benefits without changing their board's feel." },
+      "RD-03": { price:"¥13,980", url:"https://rectdisc.theshop.jp/items/65391505", tags:["Custom","Asymmetric","Torsion Control"], desc:"Independently controls torsion and flex with its asymmetric triangular shape. The most customizable model in the lineup." },
+      "RD-04": { price:"¥12,980", url:"https://rectdisc.theshop.jp/items/65391537", tags:["Versatile","Mid-size","All-round"], desc:"Mid-size all-around model. Can also correct asymmetric flex caused by bindings." },
+      "RD-05": { price:"¥13,980", url:"https://rectdisc.theshop.jp/items/65391563", tags:["Max Size","Power","Flex Control"], desc:"The largest model in the lineup. Dramatically changes board characteristics — add nose/tail stiffness or harden torsion." },
+      "RD-06": { price:"¥9,980", url:"https://rectdisc.theshop.jp/items/125907064", tags:["Jib / Trick","5mm Thin","Lightweight"], desc:"5mm thin jib-specific plate. Doesn't interfere with flex, enhances nollie pop and trick precision." },
+      "RD-07": { price:"¥21,980", url:"https://rectdisc.theshop.jp/items/141358737", tags:["Ultimate Carving","High Rigid","Stainless Rod"], desc:"The ultimate carving-specific model. Add the included stainless rod for super-hard performance on a whole new level." },
+      "RD-H":  { price:"¥14,980", url:"https://rectdisc.theshop.jp/items/102532957", tags:["Carving","Damper","Natural Feel"], desc:"Combines RD-02's flexibility with top-level carving performance. Dramatically improves carving without any stiff, unnatural feel." },
+      "RD-J":  { price:"¥13,980", url:"https://rectdisc.theshop.jp/items/136571904", tags:["Rantori","Balanced","Fusion"], desc:"Balance-focused model that elevates rantori riding. No compromise on carving or tricks, even in spring snow." },
+      "RD-R":  { price:"¥12,980", url:"https://rectdisc.theshop.jp/items/127212373", tags:["Lightest","5mm Thin","Natural Feel"], desc:"The lightest model at just 5mm. Feels like you're not even wearing a plate, while still delivering real performance gains." },
+    };
+
+    const SYSTEM = `You are an AI advisor for RECT DISC snowboard plates. Based on the detailed descriptions of each model below, ask the user 6 questions and recommend the single best model for them.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODEL DESCRIPTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+■ RD-02 (¥8,980)
+The most natural-feeling model in the lineup. Compact design preserves the board's original flex, torsion, and response while delivering RECT DISC's core benefits. Almost no stiff or unnatural feel underfoot. Ideal for riders who want to try a plate without changing their board's character.
+
+■ RD-03 (¥13,980)
+Designed to control torsion and flex independently. Asymmetric triangular shape allows you to stiffen flex while keeping torsion — or vice versa. Huge variety of setup combinations. Best for advanced riders who enjoy experimenting with board feel.
+
+■ RD-04 (¥12,980)
+Mid-size versatile all-around model. Aligning the edges of both plates can correct asymmetric flex caused by bindings. Also works slid off-center. For riders who want a step up from entry-level without going full performance.
+
+■ RD-05 (¥13,980)
+Largest model in the lineup. Adjusting placement lets you control board flex — add nose/tail stiffness or harden torsion for dramatic changes in board character. Best for powerful, speed-focused riders who want to transform their board.
+
+■ RD-06 (¥9,980)
+Ultra-thin 5mm jib/trick-specific plate. Despite being half the thickness of standard plates, it delivers full RECT DISC benefits. Lightweight, responsive, and stable — designed for riders who are serious about jib and freestyle tricks. Enhances nollie pop and trick precision without killing flex.
+
+■ RD-07 (¥21,980)
+The ultimate carving-specific model. Holds the entire board from underfoot to nose and tail. Dramatically stiffens torsion, suppresses nose/tail movement, and creates an incredibly stable edge contact. With the included high-rigidity stainless rod, performance reaches another level entirely. For carving only — not suitable for jib or rantori.
+
+■ RD-H (¥14,980)
+Combines RD-02's flexibility with RD-05-level carving performance. Edge-mounted dampers absorb vibration while delivering strong edge grip and stable turn performance. No stiffness or unnatural feel — you'll forget you're wearing a plate. Yet carving performance improves dramatically. Works great on softer boards too.
+
+■ RD-J (¥13,980)
+Rebuilds RD-02's natural feel with RD-H's carving performance fused in. Integrated mini damper reinforces the board from underfoot partway to nose and tail — naturally, without over-stiffening. For riders who refuse to compromise on carving or tricks, and want to elevate their rantori (carving × trick) riding.
+
+■ RD-R (¥12,980)
+RD-02 slimmed down to just 5mm — the lightest model in the lineup. Feels like you're not wearing a plate at all. Still delivers edge grip improvement, drag reduction, and better board stability. Best for riders who prioritize lightness and naturalness while wanting a subtle performance upgrade.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED: 6 QUESTIONS (use all, any order)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q1: Primary riding style (Jib / Freestyle / Rantori — Carving × Trick / Carving / Freeride — everything)
+Q2: Board feel preference (Don't want to change it at all / Slight change is OK / Want to change it significantly)
+Q3: Performance priority (Nollie pop & trick power / Edge grip & stability / Carving speed & sharpness / Balanced overall improvement)
+Q4: Weight & feel preference (As light and natural as possible / Performance over weight / Don't mind either way)
+Q5: Typical riding speed (Slow to medium / Medium to fast / Full speed always / Speed doesn't matter — tricks first)
+Q6: How hard do you press into the board? (Light — lighter body, softer press / Average / Strong — heavier body, powerful press / Very strong — powerful rider, maximum input)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DECISION RULES (strictly follow)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Read all model descriptions carefully and select the model that best matches all 6 answers
+- RD-07 is carving only — never recommend for jib or rantori answers
+- RD-06 only for riders who clearly answered jib/freestyle as primary style
+- RD-J only when rantori is clearly the primary goal with both carving and tricks emphasized — not for ambiguous answers
+- "Don't want to change board feel" → RD-02
+- "Light + natural + trick-focused" → RD-R
+- "Carving + natural feel" → RD-H
+- "Ultimate carving + high speed + powerful press" → RD-07
+- "Want big changes + experienced + powerful press" → RD-03 or RD-05
+- "Light press + carving interest" → RD-H
+- Ambiguous or all-around answers → RD-02 or RD-04
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT (strictly follow)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Question phase: {"phase":"question","question":"question text","options":["Option A","Option B","Option C","Option D"]}
+- Result phase: {"phase":"result","model":"RD-XX","reason":"2-3 sentences explaining why this model fits, referencing the user's specific answers","runner_up":"RD-YY","runner_up_reason":"1 sentence explaining the runner-up"}
+- Output JSON only. No markdown, no code blocks, no other text.
+- After 6 questions, always return the result. Never ask a 7th question.`;
+
+    let history = [];
+    let messages = [];
+    let qCount = 0;
+    let currentResult = null;
+    let chatHistory = [];
+    const TOTAL_Q = 6;
+
+    function show(id) {
+      ["screen-intro","screen-quiz","screen-loading","screen-result","screen-error"]
+        .forEach(s => document.getElementById(s).classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function escapeHtml(str = "") {
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+
+    function renderHistory(targetId) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const items = messages.map((m, i) => `
+        <div class="history-item">
+          <div class="history-q-num">Q${i+1}</div>
+          <div class="history-q-text">${escapeHtml(m.q)}</div>
+          <div class="history-answer">${escapeHtml(m.a)}</div>
+        </div>`).join("");
+      el.innerHTML = items + (messages.length ? '<div class="divider"></div>' : "");
+    }
+
+    async function callClaude(conv, system = SYSTEM, maxTokens = 1500) {
+      const res = await fetch("/.netlify/functions/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, system, messages: conv }),
+      });
+      const rawText = await res.text();
+      let data;
+      try { data = JSON.parse(rawText); } catch(e) { throw new Error(`Function response is not valid JSON.\n${rawText}`); }
+      if (!res.ok) { throw new Error(`API Error: ${data?.error?.message || data?.error || rawText}`); }
+      const text = Array.isArray(data.content) ? data.content.map(b => b?.text || "").join("") : "";
+      if (!text) throw new Error("Empty response from Claude.");
+      return text;
+    }
+
+    async function startQuiz() {
+      history = []; messages = []; qCount = 0; currentResult = null; chatHistory = [];
+      show("screen-loading");
+      document.getElementById("history-area-loading").innerHTML = "";
+      try {
+        const init = [{ role:"user", content:"Please start the quiz. Ask me the first question." }];
+        const text = await callClaude(init);
+        const clean = text.replace(/```json|```/g,"").trim();
+        const res = JSON.parse(clean);
+        history = [...init, { role:"assistant", content: JSON.stringify(res) }];
+        qCount = 1;
+        renderQuiz(res);
+      } catch(e) { showError(e.message || "A connection error occurred. Please try again."); }
+    }
+
+    function renderQuiz(data) {
+      if (!data || data.phase !== "question" || !Array.isArray(data.options)) { showError("Invalid question data format."); return; }
+      show("screen-quiz");
+      renderHistory("history-area");
+      document.getElementById("divider").classList.toggle("hidden", messages.length === 0);
+      document.getElementById("q-num").textContent = `Q${qCount} / ${TOTAL_Q}`;
+      document.getElementById("q-text").textContent = data.question || "";
+      const area = document.getElementById("options-area");
+      area.innerHTML = data.options.map(opt => `<button class="opt-btn" data-option="${escapeHtml(String(opt))}">${escapeHtml(String(opt))}</button>`).join("");
+      area.querySelectorAll(".opt-btn").forEach(btn => {
+        btn.addEventListener("click", () => handleAnswer(btn, btn.dataset.option));
+      });
+    }
+
+    async function handleAnswer(btn, option) {
+      document.querySelectorAll(".opt-btn").forEach(b => { b.disabled = true; b.style.pointerEvents = "none"; });
+      btn.classList.add("selected");
+      messages.push({ q: document.getElementById("q-text").textContent, a: option });
+      await new Promise(r => setTimeout(r, 350));
+      show("screen-loading");
+      renderHistory("history-area-loading");
+      const newHistory = [...history, { role:"user", content: option }];
+      try {
+        const text = await callClaude(newHistory);
+        const clean = text.replace(/```json|```/g,"").trim();
+        const res = JSON.parse(clean);
+        history = [...newHistory, { role:"assistant", content: JSON.stringify(res) }];
+        if (res.phase === "result") { renderResult(res); } else { qCount++; renderQuiz(res); }
+      } catch(e) { showError(e.message || "A connection error occurred. Please try again."); }
+    }
+
+    async function renderResult(res) {
+      currentResult = res;
+      const m = MODELS[res.model], ru = MODELS[res.runner_up];
+      document.getElementById("r-model").textContent = res.model || "";
+      document.getElementById("r-price").textContent = m ? m.price : "";
+      document.getElementById("r-desc").textContent = m ? m.desc : "";
+      document.getElementById("r-reason").textContent = res.reason || "";
+      document.getElementById("r-tags").innerHTML = m ? m.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join("") : "";
+      const link = document.getElementById("r-link");
+      link.href = m ? m.url : "#";
+      link.textContent = res.model ? `Shop ${res.model} →` : "View Product →";
+      if (ru) {
+        document.getElementById("ru-model").textContent = res.runner_up || "";
+        document.getElementById("ru-price").textContent = ru.price || "";
+        document.getElementById("ru-reason").textContent = res.runner_up_reason || "";
+        document.getElementById("ru-link").href = ru.url || "#";
+        document.getElementById("runner-block").classList.remove("hidden");
+      } else { document.getElementById("runner-block").classList.add("hidden"); }
+
+      document.getElementById("chat-messages").innerHTML = "";
+      chatHistory = [];
+      show("screen-result");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      generateAIComment(res);
+    }
+
+    async function generateAIComment(res) {
+      const commentEl = document.getElementById("ai-comment");
+      const qaLog = messages.map((m,i) => `Q${i+1}: ${m.q} → ${m.a}`).join("\n");
+      const commentSystem = `You are a RECT DISC snowboard plate expert. Based on the user's quiz answers, write a friendly personalized message about their recommended model. Keep it to 2-3 sentences in a warm, encouraging tone — like a knowledgeable friend giving advice. You may use 1-2 emojis. No markdown.`;
+      const commentPrompt = `Result: ${res.model}\n\nUser answers:\n${qaLog}\n\nReason: ${res.reason}\n\nWrite a personalized message for this rider.`;
+      try {
+        const comment = await callClaude([{ role:"user", content: commentPrompt }], commentSystem, 300);
+        commentEl.textContent = comment.trim();
+      } catch(e) {
+        commentEl.textContent = "We've picked the best match for your riding style. Give it a try — we think you'll love it! 🏂";
+      }
+    }
+
+    async function sendChat() {
+      const input = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("chat-send");
+      const msg = input.value.trim();
+      if (!msg || sendBtn.disabled) return;
+      input.value = "";
+      sendBtn.disabled = true;
+      const chatArea = document.getElementById("chat-messages");
+      const userDiv = document.createElement("div");
+      userDiv.className = "chat-msg user";
+      userDiv.textContent = msg;
+      chatArea.appendChild(userDiv);
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "chat-msg ai-loading";
+      loadingDiv.innerHTML = '<div class="dot-pulse"><span></span><span></span><span></span></div>';
+      chatArea.appendChild(loadingDiv);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      const qaLog = messages.map((m,i) => `Q${i+1}: ${m.q} → ${m.a}`).join("\n");
+      const chatSystem = `You are a RECT DISC snowboard plate expert advisor. Answer questions based on the user's quiz result and answers below. Keep responses concise — 2-3 sentences max. No markdown.
+
+Result: ${currentResult?.model || "unknown"}
+Reason: ${currentResult?.reason || ""}
+User answers:\n${qaLog}`;
+      chatHistory.push({ role:"user", content: msg });
+      try {
+        const reply = await callClaude(chatHistory, chatSystem, 400);
+        chatHistory.push({ role:"assistant", content: reply });
+        loadingDiv.remove();
+        const aiDiv = document.createElement("div");
+        aiDiv.className = "chat-msg ai";
+        aiDiv.textContent = reply.trim();
+        chatArea.appendChild(aiDiv);
+      } catch(e) {
+        loadingDiv.remove();
+        const errDiv = document.createElement("div");
+        errDiv.className = "chat-msg ai";
+        errDiv.textContent = "Sorry, something went wrong. Please try again.";
+        chatArea.appendChild(errDiv);
+        chatHistory.pop();
+      }
+      chatArea.scrollTop = chatArea.scrollHeight;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      resetQuiz();
+      document.getElementById("chat-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendChat();
+      });
+    });
+
+    function shareTwitter() {
+      if (!currentResult) return;
+      const model = currentResult.model;
+      const text = `I just took the RECT DISC AI Fit Finder quiz and got "${model}"! 🏂\nFind your perfect match 👇\n${location.href}`;
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    function copyResult() {
+      if (!currentResult) return;
+      const model = currentResult.model;
+      const m = MODELS[model];
+      const qaLog = messages.map((m,i) => `Q${i+1}: ${m.a}`).join(" / ");
+      const text = `🏂 RECT DISC AI Fit Finder Result\n\nRecommended: ${model} (${m?.price || ""})\n${currentResult.reason}\n\nAnswers: ${qaLog}\n\n📎 ${location.href}`;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById("toast");
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+      });
+    }
+
+    function showError(msg) {
+      document.getElementById("error-text").textContent = msg || "A connection error occurred. Please reload and try again.";
+      show("screen-error");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetQuiz() {
+      history = []; messages = []; qCount = 0; currentResult = null; chatHistory = [];
+      show("screen-intro");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>
