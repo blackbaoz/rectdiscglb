@@ -41,6 +41,7 @@
     .result-main { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
     .result-best-label { font-size: 10px; letter-spacing: 3px; color: #00b4ff; margin-bottom: 10px; }
     .result-model { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+    .result-img { width: 100%; max-height: 200px; object-fit: contain; border-radius: 10px; margin-bottom: 14px; background: #000; }
     .result-price { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
     .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .tag { display: inline-block; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: rgba(255,255,255,0.4); }
@@ -198,15 +199,15 @@
 
   <script>
     const MODELS = {
-      "RD-02": { price:"¥14,970", url:"https://rectdiscglb.theshop.jp/items/133378371", tags:["Natural","Entry","Compact"], desc:"The most natural-feeling model in the lineup. Perfect for riders who want RECT DISC benefits without changing their board's feel." },
-      "RD-03": { price:"¥20,970", url:"https://rectdiscglb.theshop.jp/items/133379618", tags:["Custom","Asymmetric","Torsion Control"], desc:"Independently controls torsion and flex with its asymmetric triangular shape. The most customizable model in the lineup." },
-      "RD-04": { price:"¥19,350", url:"https://rectdiscglb.theshop.jp/items/133378071", tags:["Versatile","Mid-size","All-round"], desc:"Mid-size all-around model. Can also correct asymmetric flex caused by bindings." },
-      "RD-05": { price:"¥20,970", url:"https://rectdiscglb.theshop.jp/items/133378189", tags:["Max Size","Power","Flex Control"], desc:"The largest model in the lineup. Dramatically changes board characteristics — add nose/tail stiffness or harden torsion." },
-      "RD-06": { price:"¥19,470", url:"https://rectdiscglb.theshop.jp/items/133377831", tags:["Jib / Trick","5mm Thin","Lightweight"], desc:"5mm thin jib-specific plate. Doesn't interfere with flex, enhances nollie pop and trick precision." },
-      "RD-07": { price:"¥32,970", url:"https://rectdiscglb.theshop.jp/items/141757436", tags:["Ultimate Carving","High Rigid","Stainless Rod"], desc:"The ultimate carving-specific model. Add the included stainless rod for super-hard performance on a whole new level." },
-      "RD-H":  { price:"¥22,470", url:"https://rectdiscglb.theshop.jp/items/133377791", tags:["Carving","Damper","Natural Feel"], desc:"Combines RD-02's flexibility with top-level carving performance. Dramatically improves carving without any stiff, unnatural feel." },
-      "RD-J":  { price:"¥20,970", url:"https://rectdiscglb.theshop.jp/items/138001904", tags:["Carving & Tricks","Balanced","Fusion"], desc:"Balance-focused model that elevates carving & tricks riding. No compromise on carving or tricks, even in spring snow." },
-      "RD-R":  { price:"¥19,470", url:"https://rectdiscglb.theshop.jp/items/133378098", tags:["Lightest","5mm Thin","Natural Feel"], desc:"The lightest model at just 5mm. Feels like you're not even wearing a plate, while still delivering real performance gains." },
+      "RD-02": { price:"$94.31", url:"https://rectdiscglb.theshop.jp/items/133378371", tags:["Natural","Entry","Compact"], desc:"The most natural-feeling model in the lineup. Perfect for riders who want RECT DISC benefits without changing their board's feel." },
+      "RD-03": { price:"$132.11", url:"https://rectdiscglb.theshop.jp/items/133379618", tags:["Custom","Asymmetric","Torsion Control"], desc:"Independently controls torsion and flex with its asymmetric triangular shape. The most customizable model in the lineup." },
+      "RD-04": { price:"$121.91", url:"https://rectdiscglb.theshop.jp/items/133378071", tags:["Versatile","Mid-size","All-round"], desc:"Mid-size all-around model. Can also correct asymmetric flex caused by bindings." },
+      "RD-05": { price:"$132.11", url:"https://rectdiscglb.theshop.jp/items/133378189", tags:["Max Size","Power","Flex Control"], desc:"The largest model in the lineup. Dramatically changes board characteristics — add nose/tail stiffness or harden torsion." },
+      "RD-06": { price:"$122.66", url:"https://rectdiscglb.theshop.jp/items/133377831", tags:["Jib / Trick","5mm Thin","Lightweight"], desc:"5mm thin jib-specific plate. Doesn't interfere with flex, enhances nollie pop and trick precision." },
+      "RD-07": { price:"$207.71", url:"https://rectdiscglb.theshop.jp/items/141757436", tags:["Ultimate Carving","High Rigid","Stainless Rod"], desc:"The ultimate carving-specific model. Add the included stainless rod for super-hard performance on a whole new level." },
+      "RD-H":  { price:"$141.56", url:"https://rectdiscglb.theshop.jp/items/133377791", tags:["Carving","Damper","Natural Feel"], desc:"Combines RD-02's flexibility with top-level carving performance. Dramatically improves carving without any stiff, unnatural feel." },
+      "RD-J":  { price:"$132.11", url:"https://rectdiscglb.theshop.jp/items/138001904", tags:["Carving & Tricks","Balanced","Fusion"], desc:"Balance-focused model that elevates carving & tricks riding. No compromise on carving or tricks, even in spring snow." },
+      "RD-R":  { price:"$122.66", url:"https://rectdiscglb.theshop.jp/items/133378098", tags:["Lightest","5mm Thin","Natural Feel"], desc:"The lightest model at just 5mm. Feels like you're not even wearing a plate, while still delivering real performance gains." },
     };
 
     const SYSTEM = `You are an AI advisor for RECT DISC snowboard plates. Based on the detailed descriptions of each model below, ask the user 6 questions and recommend the single best model for them.
@@ -368,6 +369,18 @@ OUTPUT FORMAT (strictly follow)
     async function renderResult(res) {
       currentResult = res;
       const m = MODELS[res.model], ru = MODELS[res.runner_up];
+      // 商品画像を表示
+      let imgEl = document.getElementById("r-img");
+      if (!imgEl) {
+        imgEl = document.createElement("img");
+        imgEl.id = "r-img";
+        imgEl.className = "result-img";
+        const resultMain = document.querySelector(".result-main");
+        resultMain.insertBefore(imgEl, resultMain.firstChild);
+      }
+      imgEl.src = m ? m.img : "";
+      imgEl.alt = res.model || "";
+      imgEl.style.display = m && m.img ? "block" : "none";
       document.getElementById("r-model").textContent = res.model || "";
       document.getElementById("r-price").textContent = m ? m.price : "";
       document.getElementById("r-desc").textContent = m ? m.desc : "";
